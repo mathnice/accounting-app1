@@ -1,0 +1,44 @@
+# 依赖
+node_modules/
+
+# 构建输出
+dist/
+build/
+web-build/
+
+# 环境变量（重要！）
+.env
+.env.local
+.env.*.local
+
+# 数据库
+backend/data/*.db
+backend/data/*.db-*
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# 日志
+logs/
+*.log
+npm-debug.log*
+yarn-debug.*
+yarn-error.*
+
+# 测试覆盖率
+coverage/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# Expo (mobile)
+.expo/
+.expo-shared/
+*.orig.*
+
+# 临时文件
+tmp/
+temp/

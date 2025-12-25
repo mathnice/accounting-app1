@@ -5,6 +5,8 @@ node_modules/
 dist/
 build/
 web-build/
+.next/
+out/
 
 # 环境变量（重要！）
 .env

@@ -16,7 +16,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import colors from '../theme/colors';
 
 const INSFORGE_BASE_URL = 'https://y758dmj4.us-east.insforge.app';
-const BACKEND_URL = 'http://10.135.41.241:3000'; // 后端API地址
+const BACKEND_URL = 'http://10.69.106.40:3000'; // 后端API地址
 
 export default function RegisterScreen({ navigation }: any) {
   const [step, setStep] = useState<'input' | 'verify'>('input');

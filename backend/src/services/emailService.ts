@@ -1,5 +1,5 @@
 // 邮件服务 - 发送验证码邮件
-// 支持多种邮件服务：Resend、Mailjet、SMTP
+// 支持多种邮件服务：QQ邮箱SMTP、Resend、Mailjet、自定义SMTP
 
 import nodemailer from 'nodemailer';
 
@@ -127,36 +127,74 @@ const sendWithSMTP = async (email: string, code: string): Promise<{ success: boo
   }
 };
 
+// 使用 QQ 邮箱 SMTP 发送邮件（推荐，可发送到任意邮箱）
+const sendWithQQMail = async (email: string, code: string): Promise<{ success: boolean; message: string }> => {
+  const user = process.env.QQ_MAIL_USER;
+  const pass = process.env.QQ_MAIL_PASS; // QQ邮箱授权码
+
+  if (!user || !pass) {
+    return { success: false, message: 'QQ邮箱未配置' };
+  }
+
+  const transporter = nodemailer.createTransport({
+    host: 'smtp.qq.com',
+    port: 465,
+    secure: true,
+    auth: { user, pass },
+  });
+
+  try {
+    await transporter.sendMail({
+      from: `"智能记账" <${user}>`,
+      to: email,
+      subject: '【智能记账】邮箱验证码',
+      html: generateEmailHTML(code),
+    });
+    console.log(`[QQ邮箱] 验证码邮件已发送至: ${email}`);
+    return { success: true, message: '验证码已发送' };
+  } catch (error) {
+    console.error('[QQ邮箱] 发送失败:', error);
+    return { success: false, message: '发送失败' };
+  }
+};
+
 // 主发送函数 - 按优先级尝试不同服务
 export const sendVerificationEmail = async (
   email: string,
   code: string
 ): Promise<{ success: boolean; message: string }> => {
-  // 1. 尝试 Resend
+  // 1. 优先使用 QQ 邮箱（可发送到任意邮箱）
+  if (process.env.QQ_MAIL_USER && process.env.QQ_MAIL_PASS) {
+    const result = await sendWithQQMail(email, code);
+    if (result.success) return result;
+  }
+
+  // 2. 尝试 Resend（免费版只能发送到已验证邮箱）
   if (process.env.RESEND_API_KEY) {
     const result = await sendWithResend(email, code);
     if (result.success) return result;
   }
 
-  // 2. 尝试 Mailjet
+  // 3. 尝试 Mailjet
   if (process.env.MAILJET_API_KEY) {
     const result = await sendWithMailjet(email, code);
     if (result.success) return result;
   }
 
-  // 3. 尝试自定义 SMTP
+  // 4. 尝试自定义 SMTP
   if (process.env.SMTP_HOST) {
     const result = await sendWithSMTP(email, code);
     if (result.success) return result;
   }
 
-  // 4. 开发模式 - 打印到控制台
+  // 5. 开发模式 - 打印到控制台
   console.log(`\n========================================`);
   console.log(`📧 验证码邮件（开发模式）`);
   console.log(`收件人: ${email}`);
   console.log(`验证码: ${code}`);
   console.log(`\n请配置以下任一服务以发送真实邮件：`);
-  console.log(`- RESEND_API_KEY (推荐，免费100封/月)`);
+  console.log(`- QQ_MAIL_USER + QQ_MAIL_PASS (推荐，可发送到任意邮箱)`);
+  console.log(`- RESEND_API_KEY (免费版只能发送到已验证邮箱)`);
   console.log(`- MAILJET_API_KEY + MAILJET_SECRET_KEY + MAILJET_FROM_EMAIL`);
   console.log(`- SMTP_HOST + SMTP_USER + SMTP_PASS`);
   console.log(`========================================\n`);

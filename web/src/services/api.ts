@@ -10,12 +10,34 @@ const api = axios.create({
   },
 });
 
-// Request interceptor - add InsForge token from localStorage
+// Helper function to get InsForge token from localStorage
+// InsForge SDK stores token with key pattern: insforge-{baseUrl}-token
+const getInsforgeToken = (): string | null => {
+  // Try to find InsForge token in localStorage
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && (key.includes('insforge') && key.includes('token'))) {
+      const value = localStorage.getItem(key);
+      if (value) {
+        // If it's a JSON string, try to parse it
+        try {
+          const parsed = JSON.parse(value);
+          if (parsed.accessToken) return parsed.accessToken;
+          if (typeof parsed === 'string') return parsed;
+        } catch {
+          // Not JSON, return as-is
+          return value;
+        }
+      }
+    }
+  }
+  return null;
+};
+
+// Request interceptor - add InsForge token
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // Get InsForge token from localStorage (set by @insforge/sdk)
-    // InsForge SDK uses 'insforge-auth-token' key
-    const token = localStorage.getItem('insforge-auth-token');
+    const token = getInsforgeToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }

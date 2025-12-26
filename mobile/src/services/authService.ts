@@ -28,6 +28,11 @@ export const signIn = async (email: string, password: string): Promise<{ user: U
     }
     
     // 返回错误信息
+    console.log('[Auth] Login failed, error:', data.error, 'message:', data.message);
+    
+    if (data.error === 'FORBIDDEN' || data.message?.includes('Email verification')) {
+      return { user: {} as User, token: '', error: '请先验证邮箱后再登录。\n\n请检查您的邮箱（包括垃圾邮件文件夹），点击验证链接完成验证。' };
+    }
     if (data.error === 'AUTH_EMAIL_NOT_VERIFIED') {
       return { user: {} as User, token: '', error: '请先验证邮箱后再登录' };
     }

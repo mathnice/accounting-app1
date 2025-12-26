@@ -54,15 +54,35 @@ export default function RegisterScreen({ navigation }: any) {
       const data = await response.json();
       console.log('[Register] Response:', response.status, data);
 
-      if (response.ok && data.user) {
-        // 注册成功，InsForge 会自动发送验证邮件
-        Alert.alert(
-          '注册成功',
-          '验证邮件已发送到您的邮箱，请点击邮件中的链接完成验证后再登录。',
-          [{ text: '去登录', onPress: () => navigation.navigate('Login') }]
-        );
+      if (response.ok) {
+        // 注册成功 - InsForge 返回 requireEmailVerification: true
+        if (data.requireEmailVerification) {
+          Alert.alert(
+            '注册成功 ✉️',
+            '验证邮件已发送到您的邮箱，请点击邮件中的链接完成验证后再登录。\n\n如果没有收到邮件，请检查垃圾邮件文件夹。',
+            [{ text: '去登录', onPress: () => navigation.navigate('Login') }]
+          );
+        } else if (data.accessToken) {
+          // 如果不需要验证，直接登录成功
+          Alert.alert('注册成功', '欢迎使用智能记账！', [
+            { text: '开始使用', onPress: () => navigation.navigate('Login') }
+          ]);
+        } else {
+          Alert.alert(
+            '注册成功',
+            '请前往登录页面登录。',
+            [{ text: '去登录', onPress: () => navigation.navigate('Login') }]
+          );
+        }
       } else if (data.error === 'AUTH_USER_EXISTS') {
-        Alert.alert('提示', '该邮箱已被注册，请直接登录或使用其他邮箱');
+        Alert.alert(
+          '账号已存在',
+          '该邮箱已被注册。如果您已验证邮箱，请直接登录；如果未收到验证邮件，请检查垃圾邮件文件夹。',
+          [
+            { text: '去登录', onPress: () => navigation.navigate('Login') },
+            { text: '取消', style: 'cancel' }
+          ]
+        );
       } else {
         Alert.alert('错误', data.message || '注册失败，请稍后重试');
       }

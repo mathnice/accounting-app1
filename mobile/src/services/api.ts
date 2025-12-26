@@ -8,7 +8,7 @@ const API_BASE_URL = 'https://accounting-app1.onrender.com/api'; // Production A
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  timeout: 60000, // 60 seconds timeout for Render free tier cold start
   headers: { 'Content-Type': 'application/json' },
 });
 

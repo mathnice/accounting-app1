@@ -13,7 +13,6 @@ import {
   ScrollView,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import colors from '../theme/colors';
 
 const INSFORGE_BASE_URL = 'https://y758dmj4.us-east.insforge.app';
@@ -45,15 +44,15 @@ export default function RegisterScreen({ navigation }: any) {
 
     setLoading(true);
     try {
-      // 调用 InsForge 注册 API
-      const response = await fetch(`${INSFORGE_BASE_URL}/api/auth/users`, {
+      // 调用 InsForge 注册 API (正确路径: /users)
+      const response = await fetch(`${INSFORGE_BASE_URL}/users`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
 
       const data = await response.json();
-      console.log('Register response:', data);
+      console.log('[Register] Response:', response.status, data);
 
       if (response.ok && data.user) {
         // 注册成功，InsForge 会自动发送验证邮件

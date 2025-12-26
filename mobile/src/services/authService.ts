@@ -10,16 +10,18 @@ export interface User {
 
 export const signIn = async (email: string, password: string): Promise<{ user: User; token: string; error?: string } | null> => {
   try {
-    console.log('Attempting login for:', email);
-    const response = await fetch(`${INSFORGE_BASE_URL}/api/auth/sessions`, {
+    console.log('[Auth] Attempting login for:', email);
+    // InsForge API endpoint for login
+    const response = await fetch(`${INSFORGE_BASE_URL}/sessions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     });
     const data = await response.json();
-    console.log('Login response:', JSON.stringify(data));
+    console.log('[Auth] Login response status:', response.status);
     
     if (data.accessToken) {
+      console.log('[Auth] Login successful, saving token');
       await AsyncStorage.setItem('insforge-auth-token', data.accessToken);
       await AsyncStorage.setItem('insforge-auth-user', JSON.stringify(data.user));
       return { user: data.user, token: data.accessToken };
@@ -33,29 +35,36 @@ export const signIn = async (email: string, password: string): Promise<{ user: U
       return { user: {} as User, token: '', error: '邮箱或密码错误' };
     }
     
+    console.log('[Auth] Login failed:', data);
     return null;
   } catch (error) {
-    console.error('Sign in error:', error);
+    console.error('[Auth] Sign in error:', error);
     return null;
   }
 };
 
 export const signUp = async (email: string, password: string): Promise<{ user: User; token: string } | null> => {
   try {
-    const response = await fetch(`${INSFORGE_BASE_URL}/api/auth/users`, {
+    console.log('[Auth] Attempting registration for:', email);
+    // InsForge API endpoint for registration
+    const response = await fetch(`${INSFORGE_BASE_URL}/users`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     });
     const data = await response.json();
+    console.log('[Auth] Registration response status:', response.status);
+    
     if (data.accessToken) {
+      console.log('[Auth] Registration successful, saving token');
       await AsyncStorage.setItem('insforge-auth-token', data.accessToken);
       await AsyncStorage.setItem('insforge-auth-user', JSON.stringify(data.user));
       return { user: data.user, token: data.accessToken };
     }
+    console.log('[Auth] Registration response:', data);
     return null;
   } catch (error) {
-    console.error('Sign up error:', error);
+    console.error('[Auth] Sign up error:', error);
     return null;
   }
 };

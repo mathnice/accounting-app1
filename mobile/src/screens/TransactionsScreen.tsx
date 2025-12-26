@@ -47,11 +47,14 @@ export default function TransactionsScreen() {
         getCategories(),
         getAccounts(),
       ]);
-      setTransactions(txRes.data.transactions);
-      setCategories(catRes.data.categories);
-      setAccounts(accRes.data.accounts);
+      console.log('Categories loaded:', catRes.data.categories?.length);
+      console.log('Accounts loaded:', accRes.data.accounts?.length);
+      setTransactions(txRes.data.transactions || []);
+      setCategories(catRes.data.categories || []);
+      setAccounts(accRes.data.accounts || []);
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error fetching data:', error);
+      Alert.alert('错误', '加载数据失败，请检查网络连接');
     }
   };
 
@@ -251,22 +254,32 @@ export default function TransactionsScreen() {
                 keyboardType="decimal-pad"
               />
 
-              <Text style={styles.inputLabel}>分类</Text>
+              <Text style={styles.inputLabel}>分类 ({filteredCategories.length}个)</Text>
               <View style={styles.pickerWrapper}>
-                <Picker selectedValue={categoryId} onValueChange={setCategoryId}>
-                  <Picker.Item label="选择分类" value="" />
+                <Picker 
+                  selectedValue={categoryId} 
+                  onValueChange={setCategoryId}
+                  style={styles.picker}
+                  dropdownIconColor={colors.textPrimary}
+                >
+                  <Picker.Item label="选择分类" value="" color={colors.textMuted} />
                   {filteredCategories.map((c) => (
-                    <Picker.Item key={c._id} label={c.name} value={c._id} />
+                    <Picker.Item key={c._id} label={c.name} value={c._id} color={colors.textPrimary} />
                   ))}
                 </Picker>
               </View>
 
-              <Text style={styles.inputLabel}>账户</Text>
+              <Text style={styles.inputLabel}>账户 ({accounts.length}个)</Text>
               <View style={styles.pickerWrapper}>
-                <Picker selectedValue={accountId} onValueChange={setAccountId}>
-                  <Picker.Item label="选择账户" value="" />
+                <Picker 
+                  selectedValue={accountId} 
+                  onValueChange={setAccountId}
+                  style={styles.picker}
+                  dropdownIconColor={colors.textPrimary}
+                >
+                  <Picker.Item label="选择账户" value="" color={colors.textMuted} />
                   {accounts.map((a) => (
-                    <Picker.Item key={a._id} label={a.name} value={a._id} />
+                    <Picker.Item key={a._id} label={a.name} value={a._id} color={colors.textPrimary} />
                   ))}
                 </Picker>
               </View>
@@ -488,6 +501,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceSecondary,
     borderRadius: 12,
     overflow: 'hidden',
+    minHeight: 50,
+  },
+  picker: {
+    color: colors.textPrimary,
+    backgroundColor: 'transparent',
   },
   noteInput: {
     backgroundColor: colors.surfaceSecondary,

@@ -1,5 +1,5 @@
 {
-  "name": "mobile",
+  "name": "smart-accounting",
   "version": "1.0.0",
   "main": "index.ts",
   "scripts": {
@@ -28,6 +28,7 @@
     "react-native-svg": "15.12.1"
   },
   "devDependencies": {
+    "@babel/core": "^7.20.0",
     "@types/react": "~19.1.0",
     "typescript": "~5.9.2"
   },

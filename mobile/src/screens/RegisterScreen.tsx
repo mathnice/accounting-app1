@@ -11,6 +11,7 @@ import {
   Platform,
   StatusBar,
   ScrollView,
+  Modal,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import colors from '../theme/colors';
@@ -22,8 +23,13 @@ export default function RegisterScreen({ navigation }: any) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  
+  // 验证码相关状态
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [verifying, setVerifying] = useState(false);
 
-  // 直接使用 InsForge 注册（InsForge 会自动发送验证邮件）
+  // 注册 - 发送验证码
   const handleRegister = async () => {
     if (!email || !email.includes('@')) {
       Alert.alert('提示', '请输入有效的邮箱地址');
@@ -44,7 +50,6 @@ export default function RegisterScreen({ navigation }: any) {
 
     setLoading(true);
     try {
-      // 调用 InsForge 注册 API (正确路径: /api/auth/users)
       const response = await fetch(`${INSFORGE_BASE_URL}/api/auth/users`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -55,31 +60,22 @@ export default function RegisterScreen({ navigation }: any) {
       console.log('[Register] Response:', response.status, data);
 
       if (response.ok) {
-        // 注册成功 - InsForge 返回 requireEmailVerification: true
         if (data.requireEmailVerification) {
-          Alert.alert(
-            '注册成功 ✉️',
-            '验证邮件已发送到您的邮箱，请点击邮件中的链接完成验证后再登录。\n\n如果没有收到邮件，请检查垃圾邮件文件夹。',
-            [{ text: '去登录', onPress: () => navigation.navigate('Login') }]
-          );
+          // 需要验证邮箱，显示验证码输入框
+          setShowOtpModal(true);
+          Alert.alert('验证码已发送', `验证码已发送到 ${email}，请查收邮件并输入验证码。`);
         } else if (data.accessToken) {
-          // 如果不需要验证，直接登录成功
           Alert.alert('注册成功', '欢迎使用智能记账！', [
             { text: '开始使用', onPress: () => navigation.navigate('Login') }
           ]);
-        } else {
-          Alert.alert(
-            '注册成功',
-            '请前往登录页面登录。',
-            [{ text: '去登录', onPress: () => navigation.navigate('Login') }]
-          );
         }
       } else if (data.error === 'AUTH_USER_EXISTS') {
         Alert.alert(
           '账号已存在',
-          '该邮箱已被注册。如果您已验证邮箱，请直接登录；如果未收到验证邮件，请检查垃圾邮件文件夹。',
+          '该邮箱已被注册。如果您还未验证邮箱，请点击"重新发送验证码"。',
           [
             { text: '去登录', onPress: () => navigation.navigate('Login') },
+            { text: '重新发送验证码', onPress: () => handleResendOtp() },
             { text: '取消', style: 'cancel' }
           ]
         );
@@ -88,6 +84,74 @@ export default function RegisterScreen({ navigation }: any) {
       }
     } catch (error) {
       console.error('Register error:', error);
+      Alert.alert('错误', '网络错误，请检查网络连接');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 验证 OTP 验证码
+  const handleVerifyOtp = async () => {
+    if (!otp || otp.length < 4) {
+      Alert.alert('提示', '请输入完整的验证码');
+      return;
+    }
+
+    setVerifying(true);
+    try {
+      const response = await fetch(`${INSFORGE_BASE_URL}/api/auth/email/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, otp }),
+      });
+
+      const data = await response.json();
+      console.log('[Verify] Response:', response.status, data);
+
+      if (response.ok) {
+        setShowOtpModal(false);
+        Alert.alert(
+          '验证成功 🎉',
+          '邮箱验证成功！现在可以登录了。',
+          [{ text: '去登录', onPress: () => navigation.navigate('Login') }]
+        );
+      } else {
+        Alert.alert('验证失败', data.message || '验证码错误或已过期，请重试');
+      }
+    } catch (error) {
+      console.error('Verify error:', error);
+      Alert.alert('错误', '网络错误，请检查网络连接');
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  // 重新发送验证码
+  const handleResendOtp = async () => {
+    if (!email) {
+      Alert.alert('提示', '请先输入邮箱地址');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch(`${INSFORGE_BASE_URL}/api/auth/email/resend`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+      console.log('[Resend] Response:', response.status, data);
+
+      if (response.ok) {
+        setShowOtpModal(true);
+        Alert.alert('发送成功', '新的验证码已发送到您的邮箱');
+      } else {
+        Alert.alert('发送失败', data.message || '无法发送验证码，请稍后重试');
+      }
+    } catch (error) {
+      console.error('Resend error:', error);
       Alert.alert('错误', '网络错误，请检查网络连接');
     } finally {
       setLoading(false);
@@ -108,7 +172,7 @@ export default function RegisterScreen({ navigation }: any) {
             <Text style={styles.logoIcon}>✨</Text>
           </View>
           <Text style={styles.title}>创建账号</Text>
-          <Text style={styles.subtitle}>注册后会收到验证邮件</Text>
+          <Text style={styles.subtitle}>注册后会收到验证码</Text>
         </View>
       </LinearGradient>
 
@@ -183,6 +247,66 @@ export default function RegisterScreen({ navigation }: any) {
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* OTP 验证码输入弹窗 */}
+      <Modal visible={showOtpModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>📧 输入验证码</Text>
+              <TouchableOpacity onPress={() => setShowOtpModal(false)}>
+                <Text style={styles.modalClose}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.modalHint}>
+              验证码已发送到 {email}
+            </Text>
+
+            <View style={styles.otpInputContainer}>
+              <TextInput
+                style={styles.otpInput}
+                placeholder="请输入验证码"
+                placeholderTextColor={colors.textMuted}
+                value={otp}
+                onChangeText={setOtp}
+                keyboardType="number-pad"
+                maxLength={6}
+                autoFocus
+              />
+            </View>
+
+            <TouchableOpacity
+              style={[styles.verifyButton, verifying && styles.buttonDisabled]}
+              onPress={handleVerifyOtp}
+              disabled={verifying}
+            >
+              <LinearGradient
+                colors={[colors.gradientStart, colors.gradientEnd]}
+                style={styles.buttonGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+              >
+                {verifying ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.buttonText}>验 证</Text>
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.resendButton}
+              onPress={handleResendOtp}
+              disabled={loading}
+            >
+              <Text style={styles.resendText}>
+                {loading ? '发送中...' : '重新发送验证码'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -291,5 +415,69 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     marginLeft: 4,
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  modalContent: {
+    backgroundColor: colors.surface,
+    borderRadius: 24,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+  },
+  modalClose: {
+    fontSize: 20,
+    color: colors.textMuted,
+    padding: 4,
+  },
+  modalHint: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  otpInputContainer: {
+    marginBottom: 20,
+  },
+  otpInput: {
+    backgroundColor: colors.surfaceSecondary,
+    borderRadius: 16,
+    padding: 16,
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+    textAlign: 'center',
+    letterSpacing: 8,
+  },
+  verifyButton: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: 16,
+  },
+  resendButton: {
+    alignItems: 'center',
+    padding: 12,
+  },
+  resendText: {
+    color: colors.primary,
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

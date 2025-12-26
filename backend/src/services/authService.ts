@@ -84,6 +84,10 @@ export const loginWithPassword = async (email: string, password: string) => {
   const isMatch = UserModel.comparePassword(password, user.password);
   if (!isMatch) throw createUnauthorizedError('Email or password incorrect');
 
+  // Auto-initialize default data for existing users who don't have them
+  CategoryModel.initializeDefaultCategories(user.id);
+  AccountModel.initializeDefaultAccounts(user.id);
+
   const token = generateToken(user);
   return { user: UserModel.toSafeUser(user), token };
 };
@@ -97,6 +101,10 @@ export const loginWithCode = async (email: string, code: string) => {
   if (!user) {
     throw createNotFoundError('Email not registered');
   }
+
+  // Auto-initialize default data for existing users who don't have them
+  CategoryModel.initializeDefaultCategories(user.id);
+  AccountModel.initializeDefaultAccounts(user.id);
 
   const token = generateToken(user);
   return { user: UserModel.toSafeUser(user), token };

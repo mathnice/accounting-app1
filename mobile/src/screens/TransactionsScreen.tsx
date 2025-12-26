@@ -41,20 +41,44 @@ export default function TransactionsScreen() {
 
   const fetchData = async () => {
     try {
-      await Promise.all([initializeCategories(), initializeAccounts()]);
+      console.log('[TransactionsScreen] Starting to fetch data...');
+      
+      // Initialize default data first
+      try {
+        await initializeCategories();
+        console.log('[TransactionsScreen] Categories initialized');
+      } catch (e) {
+        console.log('[TransactionsScreen] Initialize categories error:', e);
+      }
+      
+      try {
+        await initializeAccounts();
+        console.log('[TransactionsScreen] Accounts initialized');
+      } catch (e) {
+        console.log('[TransactionsScreen] Initialize accounts error:', e);
+      }
+      
+      // Fetch data
       const [txRes, catRes, accRes] = await Promise.all([
         getTransactions({ page: 1, limit: 50 }),
         getCategories(),
         getAccounts(),
       ]);
-      console.log('Categories loaded:', catRes.data.categories?.length);
-      console.log('Accounts loaded:', accRes.data.accounts?.length);
-      setTransactions(txRes.data.transactions || []);
-      setCategories(catRes.data.categories || []);
-      setAccounts(accRes.data.accounts || []);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-      Alert.alert('错误', '加载数据失败，请检查网络连接');
+      
+      console.log('[TransactionsScreen] Categories loaded:', catRes?.data?.categories?.length || 0);
+      console.log('[TransactionsScreen] Accounts loaded:', accRes?.data?.accounts?.length || 0);
+      console.log('[TransactionsScreen] Transactions loaded:', txRes?.data?.transactions?.length || 0);
+      
+      setTransactions(txRes?.data?.transactions || []);
+      setCategories(catRes?.data?.categories || []);
+      setAccounts(accRes?.data?.accounts || []);
+    } catch (error: any) {
+      console.error('[TransactionsScreen] Error fetching data:', error?.response?.status, error?.message);
+      if (error?.response?.status === 401) {
+        Alert.alert('错误', '登录已过期，请重新登录');
+      } else {
+        Alert.alert('错误', '加载数据失败，请检查网络连接');
+      }
     }
   };
 

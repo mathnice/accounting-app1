@@ -16,9 +16,15 @@ const api = axios.create({
 api.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
     const token = await AsyncStorage.getItem('insforge-auth-token');
+    console.log('[API] Token exists:', !!token);
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      // Log first 20 chars of token for debugging
+      console.log('[API] Token prefix:', token.substring(0, 20) + '...');
+    } else {
+      console.log('[API] No token found in AsyncStorage');
     }
+    console.log('[API] Request:', config.method?.toUpperCase(), config.url);
     return config;
   },
   (error) => Promise.reject(error)
@@ -26,9 +32,12 @@ api.interceptors.request.use(
 
 // Response interceptor
 api.interceptors.response.use(
-  (response) => response.data,
+  (response) => {
+    console.log('[API] Response success:', response.config.url);
+    return response.data;
+  },
   (error: AxiosError<{ error: { message: string } }>) => {
-    console.error('API Error:', error.response?.data || error.message);
+    console.error('[API] Error:', error.response?.status, error.response?.data || error.message);
     return Promise.reject(error);
   }
 );

@@ -11,8 +11,8 @@ export interface User {
 export const signIn = async (email: string, password: string): Promise<{ user: User; token: string; error?: string } | null> => {
   try {
     console.log('[Auth] Attempting login for:', email);
-    // InsForge API endpoint for login
-    const response = await fetch(`${INSFORGE_BASE_URL}/sessions`, {
+    // InsForge API endpoint for login (correct path: /api/auth/sessions)
+    const response = await fetch(`${INSFORGE_BASE_URL}/api/auth/sessions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
@@ -46,8 +46,8 @@ export const signIn = async (email: string, password: string): Promise<{ user: U
 export const signUp = async (email: string, password: string): Promise<{ user: User; token: string } | null> => {
   try {
     console.log('[Auth] Attempting registration for:', email);
-    // InsForge API endpoint for registration
-    const response = await fetch(`${INSFORGE_BASE_URL}/users`, {
+    // InsForge API endpoint for registration (correct path: /api/auth/users)
+    const response = await fetch(`${INSFORGE_BASE_URL}/api/auth/users`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),

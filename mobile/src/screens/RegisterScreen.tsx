@@ -44,8 +44,8 @@ export default function RegisterScreen({ navigation }: any) {
 
     setLoading(true);
     try {
-      // 调用 InsForge 注册 API (正确路径: /users)
-      const response = await fetch(`${INSFORGE_BASE_URL}/users`, {
+      // 调用 InsForge 注册 API (正确路径: /api/auth/users)
+      const response = await fetch(`${INSFORGE_BASE_URL}/api/auth/users`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),

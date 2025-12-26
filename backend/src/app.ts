@@ -1,7 +1,7 @@
 import express from 'express';
 import helmet from 'helmet';
 import config from './config';
-import { connectDatabase } from './config/database';
+import { initInsforgeDb } from './config/insforgeDb';
 import './types/express'; // 导入扩展的 Express 类型
 import { corsMiddleware } from './middlewares/cors';
 import { loggerMiddleware } from './middlewares/logger';
@@ -39,19 +39,19 @@ app.use(notFoundHandler);
 // ȫ�ִ�����
 app.use(errorHandler);
 
-// ����������
+// 启动服务器
 const startServer = async () => {
   try {
-    // �������ݿ�
-    await connectDatabase();
+    // 初始化 InsForge 数据库
+    await initInsforgeDb();
     
-    // ����������
+    // 启动服务器
     app.listen(config.port, () => {
-      console.log(`������������ http://localhost:${config.port}`);
-      console.log(`����: ${config.nodeEnv}`);
+      console.log(`服务器运行在 http://localhost:${config.port}`);
+      console.log(`环境: ${config.nodeEnv}`);
     });
   } catch (error) {
-    console.error('����������ʧ��:', error);
+    console.error('启动服务器失败:', error);
     process.exit(1);
   }
 };

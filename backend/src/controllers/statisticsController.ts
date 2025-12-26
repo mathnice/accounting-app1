@@ -5,7 +5,7 @@ import { successResponse } from '../utils/response';
 export const getSummary = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { period, startDate, endDate } = req.query;
-    const result = statisticsService.getSummary(
+    const result = await statisticsService.getSummary(
       req.user!.userId,
       period as statisticsService.TimePeriod,
       startDate as string,
@@ -18,7 +18,7 @@ export const getSummary = async (req: Request, res: Response, next: NextFunction
 export const getCategoryStats = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { type = 'expense', period, startDate, endDate } = req.query;
-    const result = statisticsService.getCategoryStats(
+    const result = await statisticsService.getCategoryStats(
       req.user!.userId,
       type as string,
       period as statisticsService.TimePeriod,
@@ -32,7 +32,7 @@ export const getCategoryStats = async (req: Request, res: Response, next: NextFu
 export const getTrendData = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { period = 'week' } = req.query;
-    const result = statisticsService.getTrendData(req.user!.userId, period as statisticsService.TimePeriod);
+    const result = await statisticsService.getTrendData(req.user!.userId, period as statisticsService.TimePeriod);
     return successResponse(res, { data: result });
   } catch (error) { next(error); }
 };

@@ -1,6 +1,7 @@
 {
   "cli": {
-    "version": ">= 3.0.0"
+    "version": ">= 3.0.0",
+    "requireCommit": false
   },
   "build": {
     "development": {
@@ -11,14 +12,12 @@
       "distribution": "internal",
       "android": {
         "buildType": "apk"
-      },
-      "node": "18.18.0"
+      }
     },
     "production": {
       "android": {
         "buildType": "apk"
-      },
-      "node": "18.18.0"
+      }
     }
   },
   "submit": {

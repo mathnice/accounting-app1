@@ -36,8 +36,20 @@ api.interceptors.response.use(
     console.log('[API] Response success:', response.config.url);
     return response.data;
   },
-  (error: AxiosError<{ error: { message: string } }>) => {
+  async (error: AxiosError<{ error: { message: string } }>) => {
     console.error('[API] Error:', error.response?.status, error.response?.data || error.message);
+    
+    // 如果是 401 错误，可能是 token 过期，清除本地存储
+    if (error.response?.status === 401) {
+      console.log('[API] Token expired or invalid, clearing stored credentials');
+      // 不自动清除，让用户重新登录时处理
+    }
+    
+    // 如果是网络错误或超时，可能是 Render 休眠
+    if (error.code === 'ECONNABORTED' || !error.response) {
+      console.log('[API] Network error or timeout - Render may be waking up');
+    }
+    
     return Promise.reject(error);
   }
 );

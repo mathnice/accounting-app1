@@ -7,6 +7,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<boolean>;
   signUp: (email: string, password: string) => Promise<boolean>;
   signOut: () => Promise<void>;
+  checkAuthStatus: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -15,13 +16,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const loadUser = async () => {
+  // 检查并恢复登录状态
+  const checkAuthStatus = async () => {
+    try {
+      console.log('[AuthContext] Checking auth status...');
       const token = await getStoredToken();
+      console.log('[AuthContext] Token exists:', !!token);
+      
       if (token) {
         const storedUser = await getStoredUser();
-        setUser(storedUser);
+        console.log('[AuthContext] Stored user:', storedUser?.email);
+        if (storedUser) {
+          setUser(storedUser);
+        }
       }
+    } catch (error) {
+      console.error('[AuthContext] Error checking auth status:', error);
+    }
+  };
+
+  useEffect(() => {
+    const loadUser = async () => {
+      await checkAuthStatus();
       setIsLoading(false);
     };
     loadUser();
@@ -57,7 +73,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, isLoading, signIn, signUp, signOut, checkAuthStatus }}>
       {children}
     </AuthContext.Provider>
   );

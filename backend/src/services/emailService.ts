@@ -29,6 +29,41 @@ const generateEmailHTML = (code: string): string => {
   `;
 };
 
+// 使用 SendGrid API 发送邮件（推荐，免费100封/天）
+const sendWithSendGrid = async (email: string, code: string): Promise<{ success: boolean; message: string }> => {
+  const apiKey = process.env.SENDGRID_API_KEY;
+  const fromEmail = process.env.SENDGRID_FROM_EMAIL;
+  
+  if (!apiKey || !fromEmail) return { success: false, message: 'SendGrid未配置' };
+
+  try {
+    const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        personalizations: [{ to: [{ email }] }],
+        from: { email: fromEmail, name: '智能记账' },
+        subject: '【智能记账】邮箱验证码',
+        content: [{ type: 'text/html', value: generateEmailHTML(code) }],
+      }),
+    });
+
+    if (response.status === 202) {
+      console.log(`[SendGrid] 验证码邮件已发送至: ${email}`);
+      return { success: true, message: '验证码已发送' };
+    }
+    const data = await response.json() as { errors?: Array<{ message: string }> };
+    console.error('[SendGrid] 错误:', data);
+    return { success: false, message: data.errors?.[0]?.message || '发送失败' };
+  } catch (error) {
+    console.error('[SendGrid] 发送失败:', error);
+    return { success: false, message: '发送失败' };
+  }
+};
+
 // 使用 Resend API 发送邮件
 const sendWithResend = async (email: string, code: string): Promise<{ success: boolean; message: string }> => {
   const apiKey = process.env.RESEND_API_KEY;
@@ -163,37 +198,44 @@ export const sendVerificationEmail = async (
   email: string,
   code: string
 ): Promise<{ success: boolean; message: string }> => {
-  // 1. 优先使用 QQ 邮箱（可发送到任意邮箱）
+  // 1. 优先使用 SendGrid（免费100封/天，可发送到任意邮箱）
+  if (process.env.SENDGRID_API_KEY && process.env.SENDGRID_FROM_EMAIL) {
+    const result = await sendWithSendGrid(email, code);
+    if (result.success) return result;
+  }
+
+  // 2. 尝试 QQ 邮箱（可发送到任意邮箱，但云服务器可能阻止SMTP）
   if (process.env.QQ_MAIL_USER && process.env.QQ_MAIL_PASS) {
     const result = await sendWithQQMail(email, code);
     if (result.success) return result;
   }
 
-  // 2. 尝试 Resend（免费版只能发送到已验证邮箱）
+  // 3. 尝试 Resend（免费版只能发送到已验证邮箱）
   if (process.env.RESEND_API_KEY) {
     const result = await sendWithResend(email, code);
     if (result.success) return result;
   }
 
-  // 3. 尝试 Mailjet
+  // 4. 尝试 Mailjet
   if (process.env.MAILJET_API_KEY) {
     const result = await sendWithMailjet(email, code);
     if (result.success) return result;
   }
 
-  // 4. 尝试自定义 SMTP
+  // 5. 尝试自定义 SMTP
   if (process.env.SMTP_HOST) {
     const result = await sendWithSMTP(email, code);
     if (result.success) return result;
   }
 
-  // 5. 开发模式 - 打印到控制台
+  // 6. 开发模式 - 打印到控制台
   console.log(`\n========================================`);
   console.log(`📧 验证码邮件（开发模式）`);
   console.log(`收件人: ${email}`);
   console.log(`验证码: ${code}`);
   console.log(`\n请配置以下任一服务以发送真实邮件：`);
-  console.log(`- QQ_MAIL_USER + QQ_MAIL_PASS (推荐，可发送到任意邮箱)`);
+  console.log(`- SENDGRID_API_KEY + SENDGRID_FROM_EMAIL (推荐，免费100封/天)`);
+  console.log(`- QQ_MAIL_USER + QQ_MAIL_PASS (可发送到任意邮箱)`);
   console.log(`- RESEND_API_KEY (免费版只能发送到已验证邮箱)`);
   console.log(`- MAILJET_API_KEY + MAILJET_SECRET_KEY + MAILJET_FROM_EMAIL`);
   console.log(`- SMTP_HOST + SMTP_USER + SMTP_PASS`);

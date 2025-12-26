@@ -2,6 +2,8 @@ import jwt from 'jsonwebtoken';
 import config from '../config';
 import * as UserModel from '../models/User';
 import * as VerificationCodeModel from '../models/VerificationCode';
+import * as CategoryModel from '../models/Category';
+import * as AccountModel from '../models/Account';
 import { sendVerificationEmail } from './emailService';
 import { createUnauthorizedError, createConflictError, createNotFoundError, createBadRequestError } from '../utils/errors';
 
@@ -65,6 +67,11 @@ export const registerUser = async (email: string, code: string, password: string
 
   const user = UserModel.createUser(email, password, nickname);
   UserModel.updateUser(user.id, { email_verified: 1 });
+  
+  // Initialize default categories and accounts for new user
+  CategoryModel.initializeDefaultCategories(user.id);
+  AccountModel.initializeDefaultAccounts(user.id);
+  
   const token = generateToken(user);
   return { user: UserModel.toSafeUser(UserModel.findUserById(user.id)!), token };
 };

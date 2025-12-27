@@ -9,6 +9,9 @@ import Statistics from './pages/Statistics';
 import Categories from './pages/Categories';
 import Accounts from './pages/Accounts';
 import Profile from './pages/Profile';
+import AIChat from './pages/AIChat';
+import AISummary from './pages/AISummary';
+import SmartBooking from './pages/SmartBooking';
 import { Spin } from 'antd';
 
 // Loading component
@@ -64,6 +67,9 @@ function App() {
           <Route path="categories" element={<Categories />} />
           <Route path="accounts" element={<Accounts />} />
           <Route path="profile" element={<Profile />} />
+          <Route path="ai-chat" element={<AIChat />} />
+          <Route path="ai-summary" element={<AISummary />} />
+          <Route path="smart-booking" element={<SmartBooking />} />
         </Route>
 
         {/* 404 redirect */}

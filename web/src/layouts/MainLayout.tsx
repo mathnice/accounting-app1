@@ -9,6 +9,9 @@ import {
   WalletOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
+  RobotOutlined,
+  BarChartOutlined,
+  ScanOutlined,
 } from '@ant-design/icons';
 import { UserButton, useUser } from '@insforge/react';
 
@@ -21,11 +24,15 @@ const MainLayout = () => {
   const { user } = useUser();
 
   const menuItems = [
-    { key: '/', icon: <HomeOutlined />, label: 'Home' },
-    { key: '/transactions', icon: <TransactionOutlined />, label: 'Transactions' },
-    { key: '/statistics', icon: <PieChartOutlined />, label: 'Statistics' },
-    { key: '/categories', icon: <AppstoreOutlined />, label: 'Categories' },
-    { key: '/accounts', icon: <WalletOutlined />, label: 'Accounts' },
+    { key: '/', icon: <HomeOutlined />, label: '首页' },
+    { key: '/transactions', icon: <TransactionOutlined />, label: '记账' },
+    { key: '/statistics', icon: <PieChartOutlined />, label: '统计' },
+    { key: '/categories', icon: <AppstoreOutlined />, label: '分类' },
+    { key: '/accounts', icon: <WalletOutlined />, label: '账户' },
+    { type: 'divider' as const },
+    { key: '/ai-chat', icon: <RobotOutlined />, label: 'AI 助手' },
+    { key: '/ai-summary', icon: <BarChartOutlined />, label: 'AI 总结' },
+    { key: '/smart-booking', icon: <ScanOutlined />, label: '智能记账' },
   ];
 
   const handleMenuClick = ({ key }: { key: string }) => {

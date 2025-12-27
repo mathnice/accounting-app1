@@ -13,6 +13,9 @@ import TransactionsScreen from '../screens/TransactionsScreen';
 import StatisticsScreen from '../screens/StatisticsScreen';
 import AccountsScreen from '../screens/AccountsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import AIChatScreen from '../screens/AIChatScreen';
+import AISummaryScreen from '../screens/AISummaryScreen';
+import SmartBookingScreen from '../screens/SmartBookingScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -71,7 +74,12 @@ export default function AppNavigator() {
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {user ? (
-          <Stack.Screen name="Main" component={MainTabs} />
+          <>
+            <Stack.Screen name="Main" component={MainTabs} />
+            <Stack.Screen name="AIChat" component={AIChatScreen} options={{ headerShown: true, title: 'AI 助手' }} />
+            <Stack.Screen name="AISummary" component={AISummaryScreen} options={{ headerShown: true, title: 'AI 总结' }} />
+            <Stack.Screen name="SmartBooking" component={SmartBookingScreen} options={{ headerShown: true, title: '智能记账' }} />
+          </>
         ) : (
           <>
             <Stack.Screen name="Login" component={LoginScreen} />

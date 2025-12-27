@@ -159,6 +159,46 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
         </View>
+
+        {/* AI 功能区 */}
+        <View style={styles.quickActions}>
+          <Text style={styles.sectionTitle}>🤖 AI 智能助手</Text>
+          <View style={styles.actionsRow}>
+            <TouchableOpacity 
+              style={[styles.actionItem, { width: '30%' }]}
+              onPress={() => navigation.navigate('AIChat')}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.actionIcon, { backgroundColor: '#E0F2FE', width: 56, height: 56 }]}>
+                <Text style={[styles.actionEmoji, { fontSize: 24 }]}>💬</Text>
+              </View>
+              <Text style={styles.actionText}>AI 客服</Text>
+              <Text style={styles.actionSubtext}>有问必答</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.actionItem, { width: '30%' }]}
+              onPress={() => navigation.navigate('AISummary')}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.actionIcon, { backgroundColor: '#FEF3C7', width: 56, height: 56 }]}>
+                <Text style={[styles.actionEmoji, { fontSize: 24 }]}>📈</Text>
+              </View>
+              <Text style={styles.actionText}>AI 总结</Text>
+              <Text style={styles.actionSubtext}>月度分析</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.actionItem, { width: '30%' }]}
+              onPress={() => navigation.navigate('SmartBooking')}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.actionIcon, { backgroundColor: '#DCFCE7', width: 56, height: 56 }]}>
+                <Text style={[styles.actionEmoji, { fontSize: 24 }]}>🧾</Text>
+              </View>
+              <Text style={styles.actionText}>智能记账</Text>
+              <Text style={styles.actionSubtext}>拍照/文字</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </ScrollView>
     </View>
   );
@@ -317,5 +357,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textSecondary,
     textAlign: 'center',
+  },
+  actionSubtext: {
+    fontSize: 10,
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginTop: 2,
   },
 });

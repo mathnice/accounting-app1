@@ -1,5 +1,34 @@
 import { Request, Response } from 'express';
 import { insforge } from '../config/insforgeDb';
+import { Blob } from 'buffer';
+import { generateCode, storeCode, verifyCode, canSendCode } from '../services/verificationService';
+import { sendVerificationEmail } from '../services/emailService';
+
+// 生成密码修改邮件HTML模板
+const generatePasswordEmailHTML = (code: string): string => {
+  return `
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif;">
+      <div style="background: linear-gradient(135deg, #6366F1, #8B5CF6); padding: 30px; border-radius: 16px 16px 0 0; text-align: center;">
+        <h1 style="color: white; margin: 0; font-size: 24px;">智能记账</h1>
+        <p style="color: rgba(255,255,255,0.8); margin: 10px 0 0 0;">密码修改验证</p>
+      </div>
+      <div style="background: #f8fafc; padding: 30px; border-radius: 0 0 16px 16px;">
+        <p style="color: #1e293b; font-size: 16px; margin-bottom: 20px;">您好！</p>
+        <p style="color: #64748b; font-size: 14px; margin-bottom: 20px;">您正在修改账号密码，请使用以下验证码完成验证：</p>
+        <div style="background: white; border: 2px dashed #6366F1; border-radius: 12px; padding: 20px; text-align: center; margin: 20px 0;">
+          <span style="font-size: 36px; font-weight: bold; color: #6366F1; letter-spacing: 8px;">${code}</span>
+        </div>
+        <p style="color: #94a3b8; font-size: 12px; margin-top: 20px;">
+          • 验证码有效期为 5 分钟<br>
+          • 如非本人操作，请忽略此邮件并检查账号安全
+        </p>
+      </div>
+      <p style="color: #94a3b8; font-size: 12px; text-align: center; margin-top: 20px;">
+        此邮件由系统自动发送，请勿回复
+      </p>
+    </div>
+  `;
+};
 
 // 获取用户统计数据
 export const getUserStats = async (req: Request, res: Response) => {
@@ -100,22 +129,21 @@ export const uploadAvatar = async (req: Request, res: Response) => {
 
     // 生成文件名
     const extension = contentType.split('/')[1] || 'jpg';
-    const fileName = `avatars/${userId}_${Date.now()}.${extension}`;
+    const fileName = `${userId}_${Date.now()}.${extension}`;
 
-    // 创建 Blob 对象用于上传 - 使用 Uint8Array 来避免类型问题
-    const uint8Array = new Uint8Array(imageBuffer);
-    const blob = new Blob([uint8Array], { type: contentType });
+    // 使用 Node.js buffer 模块的 Blob
+    const blob = new Blob([imageBuffer], { type: contentType });
 
     // 上传到 InsForge Storage
     const { data: uploadData, error: uploadError } = await insforge.storage
       .from('user-avatars')
-      .upload(fileName, blob);
+      .upload(fileName, blob as any);
 
     if (uploadError) {
       console.error('[Profile Controller] Upload error:', uploadError);
       return res.status(500).json({
         success: false,
-        error: { code: 'UPLOAD_ERROR', message: '头像上传失败' },
+        error: { code: 'UPLOAD_ERROR', message: '头像上传失败: ' + (uploadError as any).message },
       });
     }
 
@@ -154,20 +182,28 @@ export const requestPasswordOTP = async (req: Request, res: Response) => {
 
     console.log(`[Profile Controller] Requesting password OTP for user ${userEmail}`);
 
-    // 使用 InsForge Auth 发送密码重置邮件
-    // InsForge 会自动发送包含 OTP 的邮件
-    const response = await fetch(`${process.env.INSFORGE_BASE_URL || 'https://y758dmj4.us-east.insforge.app'}/api/auth/password/reset`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: userEmail }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      return res.status(400).json({
+    // 检查是否可以发送验证码
+    const { canSend, waitSeconds } = canSendCode(`pwd_${userEmail}`);
+    if (!canSend) {
+      return res.status(429).json({
         success: false,
-        error: { code: 'OTP_ERROR', message: data.message || '发送验证码失败' },
+        error: { code: 'TOO_FREQUENT', message: `请${waitSeconds}秒后再试` },
+      });
+    }
+
+    // 生成验证码
+    const code = generateCode();
+    
+    // 存储验证码（使用 pwd_ 前缀区分密码修改验证码）
+    storeCode(`pwd_${userEmail}`, code);
+
+    // 发送验证码邮件
+    const result = await sendVerificationEmail(userEmail, code);
+
+    if (!result.success) {
+      return res.status(500).json({
+        success: false,
+        error: { code: 'EMAIL_ERROR', message: result.message || '发送验证码失败' },
       });
     }
 
@@ -175,7 +211,7 @@ export const requestPasswordOTP = async (req: Request, res: Response) => {
       success: true,
       data: {
         message: '验证码已发送到您的邮箱',
-        expiresIn: 600, // 10分钟有效期
+        expiresIn: 300, // 5分钟有效期
       },
     });
   } catch (error: any) {
@@ -217,23 +253,41 @@ export const changePassword = async (req: Request, res: Response) => {
 
     console.log(`[Profile Controller] Changing password for user ${userEmail}`);
 
-    // 使用 InsForge Auth 验证 OTP 并修改密码
-    const response = await fetch(`${process.env.INSFORGE_BASE_URL || 'https://y758dmj4.us-east.insforge.app'}/api/auth/password/reset/confirm`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        email: userEmail,
-        otp,
-        newPassword,
-      }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
+    // 验证验证码
+    const verifyResult = verifyCode(`pwd_${userEmail}`, otp);
+    if (!verifyResult.valid) {
       return res.status(400).json({
         success: false,
-        error: { code: 'PASSWORD_ERROR', message: data.message || '密码修改失败' },
+        error: { code: 'INVALID_OTP', message: verifyResult.message },
+      });
+    }
+
+    // 使用 InsForge Auth API 更新密码
+    // 注意：这需要 InsForge 支持管理员 API 来更新用户密码
+    // 如果 InsForge 不支持，我们需要使用其他方式
+    try {
+      const response = await fetch(`${process.env.INSFORGE_BASE_URL || 'https://y758dmj4.us-east.insforge.app'}/api/auth/users/${userId}/password`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.INSFORGE_ADMIN_KEY || process.env.INSFORGE_ANON_KEY}`,
+        },
+        body: JSON.stringify({ password: newPassword }),
+      });
+
+      if (!response.ok) {
+        // 如果 InsForge 不支持此 API，返回提示信息
+        console.log('[Profile Controller] InsForge password update API not available');
+        return res.status(400).json({
+          success: false,
+          error: { code: 'PASSWORD_ERROR', message: '密码修改功能暂不可用，请联系管理员' },
+        });
+      }
+    } catch (apiError) {
+      console.error('[Profile Controller] InsForge API error:', apiError);
+      return res.status(400).json({
+        success: false,
+        error: { code: 'PASSWORD_ERROR', message: '密码修改功能暂不可用' },
       });
     }
 

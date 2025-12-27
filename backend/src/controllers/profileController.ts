@@ -102,13 +102,14 @@ export const uploadAvatar = async (req: Request, res: Response) => {
     const extension = contentType.split('/')[1] || 'jpg';
     const fileName = `avatars/${userId}_${Date.now()}.${extension}`;
 
+    // 创建 Blob 对象用于上传 - 使用 Uint8Array 来避免类型问题
+    const uint8Array = new Uint8Array(imageBuffer);
+    const blob = new Blob([uint8Array], { type: contentType });
+
     // 上传到 InsForge Storage
     const { data: uploadData, error: uploadError } = await insforge.storage
       .from('user-avatars')
-      .upload(fileName, imageBuffer, {
-        contentType,
-        upsert: true,
-      });
+      .upload(fileName, blob);
 
     if (uploadError) {
       console.error('[Profile Controller] Upload error:', uploadError);
@@ -118,12 +119,8 @@ export const uploadAvatar = async (req: Request, res: Response) => {
       });
     }
 
-    // 获取公开 URL
-    const { data: urlData } = insforge.storage
-      .from('user-avatars')
-      .getPublicUrl(fileName);
-
-    const avatarUrl = urlData.publicUrl;
+    // 从上传结果获取 URL
+    const avatarUrl = uploadData?.url || '';
 
     console.log(`[Profile Controller] Avatar uploaded: ${avatarUrl}`);
 

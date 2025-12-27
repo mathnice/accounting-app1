@@ -17,7 +17,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { getUserStats, UserStats } from '../services/profileService';
 
-const AVATAR_STORAGE_KEY = '@user_avatar_url';
+const AVATAR_STORAGE_KEY = '@user_avatar_base64';
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();

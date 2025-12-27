@@ -13,15 +13,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { uploadAvatar } from '../services/profileService';
 import { compressImage } from '../utils/imageUtils';
 
-const AVATAR_STORAGE_KEY = '@user_avatar_url';
+const AVATAR_STORAGE_KEY = '@user_avatar_base64';
 
 export default function AvatarSettingScreen() {
   const { user } = useAuth();
   const { colors } = useTheme();
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarBase64, setAvatarBase64] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -30,9 +29,9 @@ export default function AvatarSettingScreen() {
 
   const loadSavedAvatar = async () => {
     try {
-      const savedUrl = await AsyncStorage.getItem(AVATAR_STORAGE_KEY);
-      if (savedUrl) {
-        setAvatarUrl(savedUrl);
+      const saved = await AsyncStorage.getItem(AVATAR_STORAGE_KEY);
+      if (saved) {
+        setAvatarBase64(saved);
       }
     } catch (error) {
       console.error('Error loading avatar:', error);
@@ -87,26 +86,27 @@ export default function AvatarSettingScreen() {
   const handleImageSelected = async (uri: string) => {
     setLoading(true);
     try {
-      // 压缩图片
+      // 压缩图片并获取 base64
       const compressedBase64 = await compressImage(uri);
       
-      // 上传头像
-      const response = await uploadAvatar(compressedBase64);
-      const newAvatarUrl = response.data.avatarUrl;
-      setAvatarUrl(newAvatarUrl);
+      // 保存到本地存储（带 data URI 前缀）
+      const dataUri = compressedBase64.startsWith('data:') 
+        ? compressedBase64 
+        : `data:image/jpeg;base64,${compressedBase64}`;
       
-      // 保存到本地存储
-      await AsyncStorage.setItem(AVATAR_STORAGE_KEY, newAvatarUrl);
+      await AsyncStorage.setItem(AVATAR_STORAGE_KEY, dataUri);
+      setAvatarBase64(dataUri);
       
       Alert.alert('成功', '头像更新成功');
     } catch (error: any) {
-      Alert.alert('上传失败', error.message || '请稍后重试');
+      console.error('Avatar save error:', error);
+      Alert.alert('保存失败', error.message || '请稍后重试');
     } finally {
       setLoading(false);
     }
   };
 
-  const displayAvatar = avatarUrl || null;
+  const displayAvatar = avatarBase64 || null;
   const initials = user?.email?.[0]?.toUpperCase() || 'U';
 
   return (
@@ -137,11 +137,11 @@ export default function AvatarSettingScreen() {
         </Text>
 
         <View style={[styles.infoCard, { backgroundColor: colors.surface }]}>
-          <Text style={[styles.infoTitle, { color: colors.textPrimary }]}>头像要求</Text>
+          <Text style={[styles.infoTitle, { color: colors.textPrimary }]}>头像说明</Text>
           <Text style={[styles.infoText, { color: colors.textMuted }]}>
             • 支持 JPG、PNG 格式{'\n'}
-            • 图片会自动压缩到 500KB 以下{'\n'}
-            • 建议使用正方形图片
+            • 图片会自动压缩{'\n'}
+            • 头像保存在本地设备
           </Text>
         </View>
       </View>

@@ -1,34 +1,7 @@
 import { Request, Response } from 'express';
 import { insforge } from '../config/insforgeDb';
-import { Blob } from 'buffer';
 import { generateCode, storeCode, verifyCode, canSendCode } from '../services/verificationService';
 import { sendVerificationEmail } from '../services/emailService';
-
-// 生成密码修改邮件HTML模板
-const generatePasswordEmailHTML = (code: string): string => {
-  return `
-    <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif;">
-      <div style="background: linear-gradient(135deg, #6366F1, #8B5CF6); padding: 30px; border-radius: 16px 16px 0 0; text-align: center;">
-        <h1 style="color: white; margin: 0; font-size: 24px;">智能记账</h1>
-        <p style="color: rgba(255,255,255,0.8); margin: 10px 0 0 0;">密码修改验证</p>
-      </div>
-      <div style="background: #f8fafc; padding: 30px; border-radius: 0 0 16px 16px;">
-        <p style="color: #1e293b; font-size: 16px; margin-bottom: 20px;">您好！</p>
-        <p style="color: #64748b; font-size: 14px; margin-bottom: 20px;">您正在修改账号密码，请使用以下验证码完成验证：</p>
-        <div style="background: white; border: 2px dashed #6366F1; border-radius: 12px; padding: 20px; text-align: center; margin: 20px 0;">
-          <span style="font-size: 36px; font-weight: bold; color: #6366F1; letter-spacing: 8px;">${code}</span>
-        </div>
-        <p style="color: #94a3b8; font-size: 12px; margin-top: 20px;">
-          • 验证码有效期为 5 分钟<br>
-          • 如非本人操作，请忽略此邮件并检查账号安全
-        </p>
-      </div>
-      <p style="color: #94a3b8; font-size: 12px; text-align: center; margin-top: 20px;">
-        此邮件由系统自动发送，请勿回复
-      </p>
-    </div>
-  `;
-};
 
 // 获取用户统计数据
 export const getUserStats = async (req: Request, res: Response) => {
@@ -89,82 +62,12 @@ export const getUserStats = async (req: Request, res: Response) => {
   }
 };
 
-// 上传用户头像
+// 上传用户头像 - 已弃用，头像现在保存在本地设备
 export const uploadAvatar = async (req: Request, res: Response) => {
-  try {
-    const userId = req.user?.userId;
-    const { image } = req.body;
-
-    if (!userId) {
-      return res.status(401).json({
-        success: false,
-        error: { code: 'UNAUTHORIZED', message: '请先登录' },
-      });
-    }
-
-    if (!image || typeof image !== 'string') {
-      return res.status(400).json({
-        success: false,
-        error: { code: 'INVALID_INPUT', message: '请上传图片' },
-      });
-    }
-
-    console.log(`[Profile Controller] Uploading avatar for user ${userId}`);
-
-    // 将 base64 转换为 Buffer
-    let imageBuffer: Buffer;
-    let contentType = 'image/jpeg';
-    
-    if (image.startsWith('data:')) {
-      const matches = image.match(/^data:([^;]+);base64,(.+)$/);
-      if (matches) {
-        contentType = matches[1];
-        imageBuffer = Buffer.from(matches[2], 'base64');
-      } else {
-        imageBuffer = Buffer.from(image, 'base64');
-      }
-    } else {
-      imageBuffer = Buffer.from(image, 'base64');
-    }
-
-    // 生成文件名
-    const extension = contentType.split('/')[1] || 'jpg';
-    const fileName = `${userId}_${Date.now()}.${extension}`;
-
-    // 使用 Node.js buffer 模块的 Blob
-    const blob = new Blob([imageBuffer], { type: contentType });
-
-    // 上传到 InsForge Storage
-    const { data: uploadData, error: uploadError } = await insforge.storage
-      .from('user-avatars')
-      .upload(fileName, blob as any);
-
-    if (uploadError) {
-      console.error('[Profile Controller] Upload error:', uploadError);
-      return res.status(500).json({
-        success: false,
-        error: { code: 'UPLOAD_ERROR', message: '头像上传失败: ' + (uploadError as any).message },
-      });
-    }
-
-    // 从上传结果获取 URL
-    const avatarUrl = uploadData?.url || '';
-
-    console.log(`[Profile Controller] Avatar uploaded: ${avatarUrl}`);
-
-    return res.json({
-      success: true,
-      data: {
-        avatarUrl,
-      },
-    });
-  } catch (error: any) {
-    console.error('[Profile Controller] Upload avatar error:', error);
-    return res.status(500).json({
-      success: false,
-      error: { code: 'SERVER_ERROR', message: error.message || '头像上传失败' },
-    });
-  }
+  return res.status(400).json({
+    success: false,
+    error: { code: 'DEPRECATED', message: '头像功能已改为本地存储，无需上传' },
+  });
 };
 
 // 请求密码修改验证码

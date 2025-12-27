@@ -7,6 +7,7 @@ import statisticsRoutes from './statisticsRoutes';
 import syncRoutes from './syncRoutes';
 import aiRoutes from './aiRoutes';
 import verificationRoutes from './verificationRoutes';
+import profileRoutes from './profileRoutes';
 
 const router = Router();
 
@@ -44,5 +45,8 @@ router.use('/ai', aiRoutes);
 
 // 验证码模块路由
 router.use('/verification', verificationRoutes);
+
+// 个人资料模块路由
+router.use('/profile', profileRoutes);
 
 export default router;

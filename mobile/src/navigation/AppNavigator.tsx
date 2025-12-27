@@ -4,7 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { View, Text, StyleSheet } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
-import colors from '../theme/colors';
+import { useTheme } from '../contexts/ThemeContext';
 
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
@@ -16,12 +16,19 @@ import ProfileScreen from '../screens/ProfileScreen';
 import AIChatScreen from '../screens/AIChatScreen';
 import AISummaryScreen from '../screens/AISummaryScreen';
 import SmartBookingScreen from '../screens/SmartBookingScreen';
+import SettingsScreen from '../screens/SettingsScreen';
+import AvatarSettingScreen from '../screens/AvatarSettingScreen';
+import ChangePasswordScreen from '../screens/ChangePasswordScreen';
+import ThemeSettingScreen from '../screens/ThemeSettingScreen';
+import CurrencySettingScreen from '../screens/CurrencySettingScreen';
+import DataExportScreen from '../screens/DataExportScreen';
+import AboutScreen from '../screens/AboutScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 // Tab icon component with emoji
-const TabIcon = ({ name, focused }: { name: string; focused: boolean }) => {
+const TabIcon = ({ name, focused, colors }: { name: string; focused: boolean; colors: any }) => {
   const icons: Record<string, { icon: string; label: string }> = {
     Home: { icon: '🏠', label: '首页' },
     Transactions: { icon: '📝', label: '记账' },
@@ -42,14 +49,15 @@ const TabIcon = ({ name, focused }: { name: string; focused: boolean }) => {
 };
 
 function MainTabs() {
+  const { colors } = useTheme();
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarIcon: ({ focused }) => <TabIcon name={route.name} focused={focused} />,
+        tabBarIcon: ({ focused }) => <TabIcon name={route.name} focused={focused} colors={colors} />,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
-        tabBarStyle: styles.tabBar,
+        tabBarStyle: [styles.tabBar, { backgroundColor: colors.surface }],
         tabBarLabelStyle: styles.tabBarLabel,
         tabBarItemStyle: styles.tabBarItem,
       })}
@@ -65,6 +73,7 @@ function MainTabs() {
 
 export default function AppNavigator() {
   const { user, isLoading } = useAuth();
+  const { colors } = useTheme();
 
   if (isLoading) {
     return null;
@@ -72,13 +81,26 @@ export default function AppNavigator() {
 
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Navigator 
+        screenOptions={{ 
+          headerShown: false,
+          headerStyle: { backgroundColor: colors.surface },
+          headerTintColor: colors.textPrimary,
+        }}
+      >
         {user ? (
           <>
             <Stack.Screen name="Main" component={MainTabs} />
             <Stack.Screen name="AIChat" component={AIChatScreen} options={{ headerShown: true, title: 'AI 助手' }} />
             <Stack.Screen name="AISummary" component={AISummaryScreen} options={{ headerShown: true, title: 'AI 总结' }} />
             <Stack.Screen name="SmartBooking" component={SmartBookingScreen} options={{ headerShown: true, title: '智能记账' }} />
+            <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: true, title: '设置' }} />
+            <Stack.Screen name="AvatarSetting" component={AvatarSettingScreen} options={{ headerShown: true, title: '更换头像' }} />
+            <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ headerShown: true, title: '修改密码' }} />
+            <Stack.Screen name="ThemeSetting" component={ThemeSettingScreen} options={{ headerShown: true, title: '主题设置' }} />
+            <Stack.Screen name="CurrencySetting" component={CurrencySettingScreen} options={{ headerShown: true, title: '货币设置' }} />
+            <Stack.Screen name="DataExport" component={DataExportScreen} options={{ headerShown: true, title: '数据导出' }} />
+            <Stack.Screen name="About" component={AboutScreen} options={{ headerShown: true, title: '关于' }} />
           </>
         ) : (
           <>
@@ -93,7 +115,6 @@ export default function AppNavigator() {
 
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: colors.surface,
     borderTopWidth: 0,
     elevation: 20,
     shadowColor: '#000',

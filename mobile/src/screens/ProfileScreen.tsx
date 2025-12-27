@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,14 +7,59 @@ import {
   Alert,
   StatusBar,
   ScrollView,
-  Linking,
+  RefreshControl,
+  Image,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
-import colors from '../theme/colors';
+import { useTheme } from '../contexts/ThemeContext';
+import { getUserStats, UserStats } from '../services/profileService';
+
+const AVATAR_STORAGE_KEY = '@user_avatar_url';
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
+  const { colors } = useTheme();
+  const navigation = useNavigation<any>();
+  const [stats, setStats] = useState<UserStats | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  const fetchStats = async () => {
+    try {
+      const response = await getUserStats();
+      setStats(response.data);
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    }
+  };
+
+  const loadAvatarUrl = async () => {
+    try {
+      const savedUrl = await AsyncStorage.getItem(AVATAR_STORAGE_KEY);
+      if (savedUrl) {
+        setAvatarUrl(savedUrl);
+      }
+    } catch (error) {
+      console.error('Error loading avatar:', error);
+    }
+  };
+
+  // 页面聚焦时刷新数据
+  useFocusEffect(
+    useCallback(() => {
+      fetchStats();
+      loadAvatarUrl();
+    }, [])
+  );
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([fetchStats(), loadAvatarUrl()]);
+    setRefreshing(false);
+  };
 
   const handleSignOut = () => {
     Alert.alert('退出登录', '确定要退出登录吗？', [
@@ -23,48 +68,31 @@ export default function ProfileScreen() {
     ]);
   };
 
-  const handleMenuPress = (title: string) => {
-    switch (title) {
-      case '设置':
-        Alert.alert('设置', '账户设置功能正在开发中');
+  const handleMenuPress = (screen: string) => {
+    navigation.navigate(screen);
+  };
+
+  const menuItems = [
+    { icon: '⚙️', title: '设置', subtitle: '账户与偏好设置', screen: 'Settings' },
+    { icon: '🔒', title: '隐私', subtitle: '数据安全与隐私', action: 'privacy' },
+    { icon: '❓', title: '帮助与支持', subtitle: '常见问题与反馈', action: 'help' },
+  ];
+
+  const handleAction = (action: string) => {
+    switch (action) {
+      case 'privacy':
+        Alert.alert('隐私政策', '我们重视您的隐私安全，所有数据均加密存储在云端。');
         break;
-      case '通知':
-        Alert.alert('通知', '暂无新消息');
-        break;
-      case '隐私':
-        Alert.alert('隐私政策', '我们重视您的隐私安全，所有数据均加密存储在本地和云端。');
-        break;
-      case '帮助与支持':
-        Alert.alert(
-          '帮助与支持',
-          '如有问题，请联系我们：\n\n邮箱：support@smartaccounting.com',
-          [
-            { text: '取消', style: 'cancel' },
-            { text: '发送邮件', onPress: () => Linking.openURL('mailto:support@smartaccounting.com') },
-          ]
-        );
-        break;
-      case '关于':
-        Alert.alert(
-          '关于智能记账',
-          '版本：1.0.0\n\n智能记账是一款支持AI语音和图像识别的记账应用，帮助您轻松管理个人财务。\n\n© 2024 Smart Accounting'
-        );
-        break;
-      default:
+      case 'help':
+        Alert.alert('帮助与支持', '如有问题，请联系我们：\n\n邮箱：support@smartaccounting.com');
         break;
     }
   };
 
-  const menuItems = [
-    { icon: '⚙️', title: '设置', subtitle: '账户与偏好设置' },
-    { icon: '🔔', title: '通知', subtitle: '消息与提醒' },
-    { icon: '🔒', title: '隐私', subtitle: '数据安全与隐私' },
-    { icon: '❓', title: '帮助与支持', subtitle: '常见问题与反馈' },
-    { icon: 'ℹ️', title: '关于', subtitle: '版本信息' },
-  ];
+  const initials = user?.email?.[0]?.toUpperCase() || 'U';
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle="light-content" />
       <LinearGradient
         colors={[colors.gradientStart, colors.gradientEnd]}
@@ -72,70 +100,92 @@ export default function ProfileScreen() {
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
-        <View style={styles.avatarContainer}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              {user?.email?.[0]?.toUpperCase() || 'U'}
-            </Text>
+        <TouchableOpacity 
+          style={styles.avatarContainer}
+          onPress={() => navigation.navigate('AvatarSetting')}
+          activeOpacity={0.8}
+        >
+          {avatarUrl ? (
+            <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+          ) : (
+            <View style={styles.avatarPlaceholder}>
+              <Text style={styles.avatarText}>{initials}</Text>
+            </View>
+          )}
+          <View style={styles.editBadge}>
+            <Text style={styles.editIcon}>✏️</Text>
           </View>
-          <Text style={styles.email}>{user?.email}</Text>
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>普通会员</Text>
-          </View>
+        </TouchableOpacity>
+        <Text style={styles.email}>{user?.email}</Text>
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>普通会员</Text>
         </View>
       </LinearGradient>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.statsCard}>
+      <ScrollView 
+        style={styles.content} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        <View style={[styles.statsCard, { backgroundColor: colors.surface }]}>
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>30</Text>
-            <Text style={styles.statLabel}>记账天数</Text>
+            <Text style={[styles.statValue, { color: colors.primary }]}>
+              {stats?.recordingDays || 0}
+            </Text>
+            <Text style={[styles.statLabel, { color: colors.textMuted }]}>记账天数</Text>
           </View>
-          <View style={styles.statDivider} />
+          <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>128</Text>
-            <Text style={styles.statLabel}>交易笔数</Text>
+            <Text style={[styles.statValue, { color: colors.primary }]}>
+              {stats?.transactionCount || 0}
+            </Text>
+            <Text style={[styles.statLabel, { color: colors.textMuted }]}>交易笔数</Text>
           </View>
-          <View style={styles.statDivider} />
+          <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>5</Text>
-            <Text style={styles.statLabel}>账户数量</Text>
+            <Text style={[styles.statValue, { color: colors.primary }]}>
+              {stats?.accountCount || 0}
+            </Text>
+            <Text style={[styles.statLabel, { color: colors.textMuted }]}>账户数量</Text>
           </View>
         </View>
 
-        <View style={styles.menuSection}>
+        <View style={[styles.menuSection, { backgroundColor: colors.surface }]}>
           {menuItems.map((item, index) => (
             <TouchableOpacity
               key={index}
               style={[
                 styles.menuItem,
+                { borderBottomColor: colors.borderLight },
                 index === menuItems.length - 1 && styles.menuItemLast,
               ]}
               activeOpacity={0.7}
-              onPress={() => handleMenuPress(item.title)}
+              onPress={() => item.screen ? handleMenuPress(item.screen) : handleAction(item.action!)}
             >
-              <View style={styles.menuIconContainer}>
+              <View style={[styles.menuIconContainer, { backgroundColor: colors.surfaceSecondary }]}>
                 <Text style={styles.menuIcon}>{item.icon}</Text>
               </View>
               <View style={styles.menuContent}>
-                <Text style={styles.menuTitle}>{item.title}</Text>
-                <Text style={styles.menuSubtitle}>{item.subtitle}</Text>
+                <Text style={[styles.menuTitle, { color: colors.textPrimary }]}>{item.title}</Text>
+                <Text style={[styles.menuSubtitle, { color: colors.textMuted }]}>{item.subtitle}</Text>
               </View>
-              <Text style={styles.menuArrow}>›</Text>
+              <Text style={[styles.menuArrow, { color: colors.textMuted }]}>›</Text>
             </TouchableOpacity>
           ))}
         </View>
 
         <TouchableOpacity
-          style={styles.signOutButton}
+          style={[styles.signOutButton, { backgroundColor: colors.surface }]}
           onPress={handleSignOut}
           activeOpacity={0.7}
         >
           <Text style={styles.signOutIcon}>🚪</Text>
-          <Text style={styles.signOutText}>退出登录</Text>
+          <Text style={[styles.signOutText, { color: colors.danger }]}>退出登录</Text>
         </TouchableOpacity>
 
-        <Text style={styles.version}>版本 1.0.0</Text>
+        <Text style={[styles.version, { color: colors.textMuted }]}>版本 1.0.0</Text>
       </ScrollView>
     </View>
   );
@@ -144,36 +194,57 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   header: {
     paddingTop: 60,
     paddingBottom: 40,
+    alignItems: 'center',
     borderBottomLeftRadius: 32,
     borderBottomRightRadius: 32,
   },
   avatarContainer: {
-    alignItems: 'center',
+    position: 'relative',
+    marginBottom: 12,
   },
   avatar: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    borderWidth: 3,
+    borderColor: 'rgba(255,255,255,0.3)',
+  },
+  avatarPlaceholder: {
     width: 90,
     height: 90,
     borderRadius: 45,
     backgroundColor: 'rgba(255,255,255,0.2)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
     borderWidth: 3,
     borderColor: 'rgba(255,255,255,0.3)',
   },
   avatarText: {
-    color: colors.textWhite,
+    color: '#fff',
     fontSize: 36,
     fontWeight: 'bold',
   },
+  editBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  editIcon: {
+    fontSize: 14,
+  },
   email: {
     fontSize: 16,
-    color: colors.textWhite,
+    color: '#fff',
     marginBottom: 8,
   },
   badge: {
@@ -183,7 +254,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   badgeText: {
-    color: colors.textWhite,
+    color: '#fff',
     fontSize: 12,
   },
   content: {
@@ -192,7 +263,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   statsCard: {
-    backgroundColor: colors.surface,
     borderRadius: 20,
     padding: 20,
     flexDirection: 'row',
@@ -210,19 +280,15 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: colors.primary,
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
-    color: colors.textMuted,
   },
   statDivider: {
     width: 1,
-    backgroundColor: colors.border,
   },
   menuSection: {
-    backgroundColor: colors.surface,
     borderRadius: 20,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -237,7 +303,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: colors.borderLight,
   },
   menuItemLast: {
     borderBottomWidth: 0,
@@ -246,7 +311,6 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 12,
-    backgroundColor: colors.surfaceSecondary,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
@@ -260,19 +324,15 @@ const styles = StyleSheet.create({
   menuTitle: {
     fontSize: 16,
     fontWeight: '500',
-    color: colors.textPrimary,
     marginBottom: 2,
   },
   menuSubtitle: {
     fontSize: 13,
-    color: colors.textMuted,
   },
   menuArrow: {
     fontSize: 24,
-    color: colors.textMuted,
   },
   signOutButton: {
-    backgroundColor: colors.surface,
     borderRadius: 16,
     padding: 16,
     flexDirection: 'row',
@@ -289,13 +349,11 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   signOutText: {
-    color: colors.danger,
     fontSize: 16,
     fontWeight: '600',
   },
   version: {
     textAlign: 'center',
-    color: colors.textMuted,
     fontSize: 12,
     marginTop: 20,
     marginBottom: 30,

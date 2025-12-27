@@ -14,14 +14,14 @@ import { useNavigation } from '@react-navigation/native';
 import { getSummary, SummaryResult } from '../services/statisticsService';
 import { initializeCategories } from '../services/categoryService';
 import { initializeAccounts } from '../services/accountService';
-import { useCurrency } from '../contexts/CurrencyContext';
 import colors from '../theme/colors';
 
 export default function HomeScreen() {
   const [summary, setSummary] = useState<SummaryResult | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const navigation = useNavigation<any>();
-  const { formatAmount } = useCurrency();
+
+  const formatAmount = (amount: number) => `¥${(amount / 100).toFixed(2)}`;
 
   const fetchData = async () => {
     try {

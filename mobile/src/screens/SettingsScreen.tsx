@@ -6,11 +6,11 @@ import {
   ScrollView,
   TouchableOpacity,
   StatusBar,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../contexts/ThemeContext';
-import { useCurrency } from '../contexts/CurrencyContext';
 
 interface SettingItem {
   icon: string;
@@ -24,7 +24,6 @@ interface SettingItem {
 export default function SettingsScreen() {
   const navigation = useNavigation<any>();
   const { theme, colors } = useTheme();
-  const { currencyInfo } = useCurrency();
 
   const themeLabels: Record<string, string> = {
     light: '浅色',
@@ -40,24 +39,11 @@ export default function SettingsScreen() {
       screen: 'AvatarSetting',
     },
     {
-      icon: '🔐',
-      title: '修改密码',
-      subtitle: '通过邮箱验证修改密码',
-      screen: 'ChangePassword',
-    },
-    {
       icon: '🎨',
       title: '主题设置',
       subtitle: '切换浅色/深色模式',
       value: themeLabels[theme],
       screen: 'ThemeSetting',
-    },
-    {
-      icon: '💰',
-      title: '货币设置',
-      subtitle: '选择显示货币',
-      value: `${currencyInfo.symbol} ${currencyInfo.nameCN}`,
-      screen: 'CurrencySetting',
     },
     {
       icon: '📤',

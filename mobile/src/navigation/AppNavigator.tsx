@@ -18,9 +18,7 @@ import AISummaryScreen from '../screens/AISummaryScreen';
 import SmartBookingScreen from '../screens/SmartBookingScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import AvatarSettingScreen from '../screens/AvatarSettingScreen';
-import ChangePasswordScreen from '../screens/ChangePasswordScreen';
 import ThemeSettingScreen from '../screens/ThemeSettingScreen';
-import CurrencySettingScreen from '../screens/CurrencySettingScreen';
 import DataExportScreen from '../screens/DataExportScreen';
 import AboutScreen from '../screens/AboutScreen';
 
@@ -96,9 +94,7 @@ export default function AppNavigator() {
             <Stack.Screen name="SmartBooking" component={SmartBookingScreen} options={{ headerShown: true, title: '智能记账' }} />
             <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: true, title: '设置' }} />
             <Stack.Screen name="AvatarSetting" component={AvatarSettingScreen} options={{ headerShown: true, title: '更换头像' }} />
-            <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ headerShown: true, title: '修改密码' }} />
             <Stack.Screen name="ThemeSetting" component={ThemeSettingScreen} options={{ headerShown: true, title: '主题设置' }} />
-            <Stack.Screen name="CurrencySetting" component={CurrencySettingScreen} options={{ headerShown: true, title: '货币设置' }} />
             <Stack.Screen name="DataExport" component={DataExportScreen} options={{ headerShown: true, title: '数据导出' }} />
             <Stack.Screen name="About" component={AboutScreen} options={{ headerShown: true, title: '关于' }} />
           </>

@@ -1,7 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
 import { AuthProvider } from './src/contexts/AuthContext';
 import { ThemeProvider, useTheme } from './src/contexts/ThemeContext';
-import { CurrencyProvider } from './src/contexts/CurrencyContext';
 import AppNavigator from './src/navigation/AppNavigator';
 
 function AppContent() {
@@ -17,11 +16,9 @@ function AppContent() {
 export default function App() {
   return (
     <ThemeProvider>
-      <CurrencyProvider>
-        <AuthProvider>
-          <AppContent />
-        </AuthProvider>
-      </CurrencyProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
     </ThemeProvider>
   );
 }

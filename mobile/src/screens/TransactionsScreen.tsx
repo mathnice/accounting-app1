@@ -24,7 +24,6 @@ import {
 } from '../services/transactionService';
 import { getCategories, Category, initializeCategories } from '../services/categoryService';
 import { getAccounts, Account, initializeAccounts } from '../services/accountService';
-import { useCurrency } from '../contexts/CurrencyContext';
 import colors from '../theme/colors';
 
 export default function TransactionsScreen() {
@@ -39,7 +38,8 @@ export default function TransactionsScreen() {
   const [accountId, setAccountId] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('wechat');
   const [note, setNote] = useState('');
-  const { formatAmount } = useCurrency();
+
+  const formatAmount = (amt: number) => `¥${(amt / 100).toFixed(2)}`;
 
   const fetchData = async () => {
     try {
@@ -173,7 +173,7 @@ export default function TransactionsScreen() {
             { color: item.type === 'income' ? colors.success : colors.danger },
           ]}
         >
-          {item.type === 'income' ? '+' : '-'}{formatAmount(item.amount)}
+          {item.type === 'income' ? '+' : '-'}¥{(item.amount / 100).toFixed(2)}
         </Text>
       </TouchableOpacity>
     );
